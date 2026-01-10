@@ -54,7 +54,7 @@ namespace ASCOM.ShellyRelayController.Switch
 
         private Guid uniqueId; // A unique ID for this instance of the driver
 
-        #region Initialisation and Dispose
+        #region initialization and Dispose
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShellyRelayController"/> class. Must be public to successfully register for COM.
@@ -81,7 +81,7 @@ namespace ASCOM.ShellyRelayController.Switch
                 // Initialise the hardware if required
                 SwitchHardware.InitialiseHardware();
 
-                LogMessage("Switch", "Starting driver initialisation");
+                LogMessage("Switch", "Starting driver initialization");
                 LogMessage("Switch", $"ProgID: {DriverProgId}, Description: {DriverDescription}");
 
                 connectedState = false; // Initialise connected to false
@@ -89,11 +89,11 @@ namespace ASCOM.ShellyRelayController.Switch
                 // Create a unique ID to identify this driver instance
                 uniqueId = Guid.NewGuid();
 
-                LogMessage("Switch", "Completed initialisation");
+                LogMessage("Switch", "Completed initialization");
             }
             catch (Exception ex)
             {
-                LogMessage("Switch", $"Initialisation exception: {ex}");
+                LogMessage("Switch", $"initialization exception: {ex}");
                 MessageBox.Show($"{ex.Message}", "Exception creating ASCOM.ShellyRelayController.Switch", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

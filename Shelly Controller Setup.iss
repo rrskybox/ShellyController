@@ -34,12 +34,12 @@ Name: "{cf}\ASCOM\Uninstall\Switch\Shelly Controller"
 ; TODO: Add subfolders below {app} as needed (e.g. Name: "{app}\MyFolder")
 
 [Files]
-Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\bin\Release\ASCOM.ShellyRelayController.exe"; DestDir: "{app}"
+Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\bin\Debug\ASCOM.ShellyRelayController.exe"; DestDir: "{app}"
 ; TODO: Add driver assemblies into the ServedClasses folder
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
 Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\Shelly Controller Guide.htm"; DestDir: "{app}"; Flags: isreadme
 ; TODO: Add other files needed by your driver here (add subfolders above)
-Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\bin\Release\Newtonsoft.Json.dll"; DestDir: "{app}"
+Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\bin\Debug\Newtonsoft.Json.dll"; DestDir: "{app}"
 
 
 ; Only if driver is .NET

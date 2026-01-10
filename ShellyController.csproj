@@ -108,6 +108,7 @@
       <DependentUpon>SetupDialogForm.cs</DependentUpon>
     </Compile>
     <Compile Include="SharedResources.cs" />
+    <Compile Include="SwitchDriver\SwitchMap.cs" />
     <EmbeddedResource Include="SwitchDriver\SetupDialogForm.resx">
       <DependentUpon>SetupDialogForm.cs</DependentUpon>
       <SubType>Designer</SubType>

@@ -15,12 +15,14 @@ using ASCOM.Astrometry.AstroUtils;
 using ASCOM.Astrometry.NOVAS;
 using ASCOM.DeviceInterface;
 using ASCOM.Utilities;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Newtonsoft.Json;
+using static System.Windows.Forms.AxHost;
 
 namespace ASCOM.ShellyRelayController.Switch
 {
@@ -40,7 +42,9 @@ namespace ASCOM.ShellyRelayController.Switch
     internal static class SwitchHardware
     {
         // Constants used for Profile persistence
-        internal const string ipAddressProfileName = "IP Address";
+        internal const string switchMapProfileName = "Switch Map";
+
+        internal const string deviceDescription = "Collection of Shelly Relay Switches controlled over IP";
 
         internal const string DefaultIPAddress = "192.168.1.111";
         internal const string traceStateProfileName = "Trace Level";
@@ -48,7 +52,8 @@ namespace ASCOM.ShellyRelayController.Switch
         private static string DriverProgId = ""; // ASCOM DeviceID (COM ProgID) for this driver, the value is set by the driver's class initialiser.
         private static string DriverDescription = ""; // The value is set by the driver's class initialiser.
 
-        public static string ipAddress { get; set; } = DefaultIPAddress; // IP Address of the Shelly Power Relay device
+        //public static string ipAddress { get; set; } = DefaultIPAddress; // IP Address of the Shelly Power Relay device
+        public static SwitchMap switchMap { get; set; } = null; // Switch mapping information
 
         private static bool connectedState; // Local server's connected state
         private static bool runOnce = false; // Flag to enable "one-off" activities only to run once.
@@ -66,7 +71,7 @@ namespace ASCOM.ShellyRelayController.Switch
             try
             {
                 // Create the hardware trace logger in the static initialiser.
-                // All other initialisation should go in the InitialiseHardware method.
+                // All other initialization should go in the InitialiseHardware method.
                 tl = new TraceLogger("", "ShellyRelayController.Hardware");
 
                 // DriverProgId has to be set here because it used by ReadProfile to get the TraceState flag.
@@ -74,19 +79,20 @@ namespace ASCOM.ShellyRelayController.Switch
 
                 // ReadProfile has to go here before anything is written to the log because it loads the TraceLogger enable / disable state.
                 ReadProfile(); // Read device configuration from the ASCOM Profile store, including the trace state
-
-                LogMessage("SwitchHardware", $"Static initialiser completed.");
+                LogMessage("SwitchHardware", $"Static initializer completed.");
+                foreach (SwitchMap.SwitchMapping sm in switchMap.GetAllMappings())
+                    LogMessage("SwitchHardwareMapping", sm.SwitchNumber.ToString());
             }
             catch (Exception ex)
             {
-                try { LogMessage("SwitchHardware", $"Initialisation exception: {ex}"); } catch { }
+                try { LogMessage("SwitchHardware", $"initialization exception: {ex}"); } catch { }
                 MessageBox.Show($"SwitchHardware - {ex.Message}\r\n{ex}", $"Exception creating {Switch.DriverProgId}", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 throw;
             }
         }
 
         /// <summary>
-        /// Place device initialisation code here
+        /// Place device initialization code here
         /// </summary>
         /// <remarks>Called every time a new instance of the driver is created.</remarks>
         internal static void InitialiseHardware()
@@ -99,7 +105,7 @@ namespace ASCOM.ShellyRelayController.Switch
             // Add any code that you only want to run when the first client connects in the if (runOnce == false) block below
             if (runOnce == false)
             {
-                LogMessage("InitialiseHardware", $"Starting one-off initialisation.");
+                LogMessage("InitialiseHardware", $"Starting one-off initialization.");
 
                 DriverDescription = Switch.DriverDescription; // Get this device's Chooser description
 
@@ -109,12 +115,12 @@ namespace ASCOM.ShellyRelayController.Switch
                 utilities = new Util(); //Initialise ASCOM Utilities object
                 astroUtilities = new AstroUtils(); // Initialise ASCOM Astronomy Utilities object
 
-                LogMessage("InitialiseHardware", "Completed basic initialisation");
+                LogMessage("InitialiseHardware", "Completed basic initialization");
 
-                // Add your own "one off" device initialisation here e.g. validating existence of hardware and setting up communications
+                // Add your own "one off" device initialization here e.g. validating existence of hardware and setting up communications
                 // If you are using a serial COM port you will find the COM port name selected by the user through the setup dialogue in the comPort variable.
 
-                LogMessage("InitialiseHardware", $"One-off initialisation complete.");
+                LogMessage("InitialiseHardware", $"One-off initialization complete.");
                 runOnce = true; // Set the flag to ensure that this code is not run again
             }
         }
@@ -375,16 +381,7 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             get
             {
-                NetIO netIO = new NetIO(ipAddress);
-                JAPI.Sys.GetConfigRequest scfgRequest = new JAPI.Sys.GetConfigRequest();
-                string sjsnRequest = JsonConvert.SerializeObject(scfgRequest);
-                //string sjsnRequest = JsonSerializer.Serialize(scfgRequest);
-                string sjsnResponse = netIO.SendCommand(sjsnRequest);
-                JAPI.Sys.GetConfigResponse.Response sysRoot = JsonConvert.DeserializeObject<JAPI.Sys.GetConfigResponse.Response>(sjsnResponse);
-                //JAPI.Sys.GetConfigResponse.Response sysRoot = JsonSerializer.Deserialize<JAPI.Sys.GetConfigResponse.Response>(sjsnResponse);
-                DriverDescription = sysRoot.src.Split('-')[0].Trim(new char[] { '"' });
-                LogMessage("Description Get", DriverDescription);
-                return DriverDescription;
+                return deviceDescription;
             }
         }
 
@@ -448,7 +445,7 @@ namespace ASCOM.ShellyRelayController.Switch
 
         #region ISwitch Implementation
 
-        private static short numSwitch = 0;
+        private static short maxSwitchNumber = 0;
 
         /// <summary>
         /// The number of switches managed by this driver
@@ -458,37 +455,13 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             get
             {
-                string driverDescription = Description;
-                switch (driverDescription)
-                {
-                    case "shelly1":
-                        numSwitch = 1;
-                        break;
-                    case "shelly2":
-                        numSwitch = 2;
-                        break;
-                    case "shelly4":
-                        numSwitch = 4;
-                        break;
-                    case "shellypro1pm":
-                        numSwitch = 1;
-                        break;
-                    case "shellypro2pm":
-                        numSwitch = 2;
-                        break;
-                    case "shellypro4pm":
-                        numSwitch = 4;
-                        break;
-                    default:
-                        numSwitch = 0;
-                        break;
-                }
-                LogMessage("MaxSwitch Get", numSwitch.ToString());
-                return numSwitch;
+                LogMessage("MaxSwitch Get", maxSwitchNumber.ToString());
+                maxSwitchNumber = (short)(switchMap.MaxSwitchNumber + 1);
+                return maxSwitchNumber;
             }
         }
 
-        private static string[] switchNames = new string[] { "Relay 0", "Relay 1", "Relay 2", "Relay 3" };
+        // private static string[] switchNames = new string[] { "Relay 0", "Relay 1", "Relay 2", "Relay 3" };
         /// <summary>
         /// Return the name of switch device n.
         /// </summary>
@@ -498,23 +471,7 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             Validate("GetSwitchName", id);
             LogMessage("GetSwitchName", $"GetSwitchName({id})");
-            NetIO netIO = new NetIO(ipAddress);
-            JAPI.Switch.GetConfigRequest getCfgRequest = new JAPI.Switch.GetConfigRequest();
-            getCfgRequest.id = 0;
-            getCfgRequest.@params.id = id;
-            var jsnResponse = netIO.SendCommand(JsonConvert.SerializeObject(getCfgRequest));
-            JAPI.Switch.GetConfigResponse.Response setSwitchResponse =
-                JsonConvert.DeserializeObject<JAPI.Switch.GetConfigResponse.Response>(jsnResponse);
-            if (setSwitchResponse.error != null)
-            {
-                LogMessage("GetSwitchName", $"GetSwitchName({id}) = Error: {setSwitchResponse.error.code}");
-                throw new ASCOM.DriverException(setSwitchResponse.error.message);
-            }
-            if (setSwitchResponse.result.name != null)
-            {
-                switchNames[id] = setSwitchResponse.result.name;
-            }
-            return switchNames[id];
+            return switchMap.ReadRelayName(id);
         }
 
         /// <summary>
@@ -526,14 +483,8 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             Validate("SetSwitchName", id);
             LogMessage("SetSwitchName", $"SetSwitchName({id}) = {name}");
-            switchNames[id] = name;
-            NetIO netIO = new NetIO(ipAddress);
-            JAPI.Switch.SetConfigRequest setCfgRequest = new JAPI.Switch.SetConfigRequest();
-            setCfgRequest.id = 0;
-            setCfgRequest.@params.id = id;
-            setCfgRequest.@params.config.name = name;
-            var jsnResponse = netIO.SendCommand(JsonConvert.SerializeObject(setCfgRequest));
-            JAPI.Switch.SetConfigResponse.Response setSwitchResponse = JsonConvert.DeserializeObject<JAPI.Switch.SetConfigResponse.Response>(jsnResponse);
+            switchMap.WriteRelayName(id, name);
+            return;
         }
 
         /// <summary>
@@ -547,34 +498,8 @@ namespace ASCOM.ShellyRelayController.Switch
         internal static string GetSwitchDescription(short id)
         {
             Validate("GetSwitchDescription", id);
-            string driverDescription = Description;
-            string switchDescription = "";
-            switch (driverDescription)
-            {
-                case "shelly1":
-                    switchDescription = "Shelly Single Relay Controller";
-                    break;
-                case "shelly2":
-                    switchDescription = "Shelly Dual Relay Controller";
-                    break;
-                case "shelly4":
-                    switchDescription = "Shelly Four Relay Controller";
-                    break;
-                case "shellypro1pm":
-                    switchDescription = "Shelly Single Relay Controller";
-                    break;
-                case "shellypro2pm":
-                    switchDescription = "Shelly Dual Relay Controller";
-                    break;
-                case "shellypro4pm":
-                    switchDescription = "Shelly Four Relay Controller";
-                    break;
-                default:
-                    switchDescription = "No Relay Switch Selected";
-                    break;
-            }
-            LogMessage("GetSwitchDescription Get", switchDescription);
-            return switchDescription;
+            LogMessage("GetSwitchDescription", $"GetSwitchDescription({id})");
+            return switchMap.ReadRelayDescription(id);
         }
 
         /// <summary>
@@ -603,12 +528,19 @@ namespace ASCOM.ShellyRelayController.Switch
         /// <returns>True or false</returns>
         internal static bool GetSwitch(short id)
         {
-            NetIO netIO = new NetIO(ipAddress);
             Validate("GetSwitch", id);
-            LogMessage("GetSwitch", $"GetSwitch({id}) - not implemented");
+            LogMessage("GetSwitch", $"GetSwitch({id})");
+            string ipAddress = switchMap.ReadDeviceIP(id);
+            NetIO netIO = new NetIO(ipAddress);
             JAPI.Switch.GetStatusRequest statusRequest = new JAPI.Switch.GetStatusRequest();
+            string relayNumberString = switchMap.ReadRelayNumber(id);
+            if (relayNumberString == null) 
+            {
+                LogMessage("GetSwitch", $"Failed -- unknown relay number {relayNumberString}");
+                return false;
+            }
             statusRequest.id = 0;
-            statusRequest.@params.id = id;
+            statusRequest.@params.id = Convert.ToInt16(relayNumberString);
             string jsnRequest = JsonConvert.SerializeObject(statusRequest);
             string jsnResponse = netIO.SendCommand(jsnRequest);
             JAPI.Switch.GetStatusResponse.Response statusResponse = JsonConvert.DeserializeObject<JAPI.Switch.GetStatusResponse.Response>(jsnResponse);
@@ -630,10 +562,17 @@ namespace ASCOM.ShellyRelayController.Switch
                 throw new MethodNotImplementedException(str);
             }
             LogMessage("SetSwitch", $"SetSwitch({id}) = {state}");
+            string ipAddress = switchMap.ReadDeviceIP(id);
             NetIO netIO = new NetIO(ipAddress);
             JAPI.Switch.SetSwitchRequest relayRequest = new JAPI.Switch.SetSwitchRequest();
+            string relayNumberString = switchMap.ReadRelayNumber(id);
+            if (relayNumberString == null) 
+            {
+                LogMessage("SetSwitch", $"Failed -- unknown relay number {relayNumberString}");
+                return;
+            }
             relayRequest.id = 0;
-            relayRequest.@params.id = id;
+            relayRequest.@params.id = Convert.ToInt16(relayNumberString);
             relayRequest.@params.on = state;
             string jsnRequest = JsonConvert.SerializeObject(relayRequest);
             string jsnResponse = netIO.SendCommand(jsnRequest);
@@ -643,6 +582,7 @@ namespace ASCOM.ShellyRelayController.Switch
                 LogMessage("SetSwitch", $"SetSwitch({id}) = Error: {relayResponse.error.code}");
                 throw new ASCOM.DriverException(relayResponse.error.message);
             }
+            LogMessage("SetSwitch", $"SetSwitch({id}) = {state}");
             return;
         }
 
@@ -658,7 +598,7 @@ namespace ASCOM.ShellyRelayController.Switch
         internal static double MaxSwitchValue(short id)
         {
             Validate("MaxSwitchValue", id);
-            LogMessage("MaxSwitchValue", $"MaxSwitchValue({id}" + " 1.0");
+            LogMessage("MaxSwitchValue", $"MaxSwitchValue({id})" + " = 1.0");
             return 1.0;
         }
 
@@ -670,7 +610,7 @@ namespace ASCOM.ShellyRelayController.Switch
         internal static double MinSwitchValue(short id)
         {
             Validate("MinSwitchValue", id);
-            LogMessage("MinSwitchValue", $"MinSwitchValue({id}" + " 0.0");
+            LogMessage("MinSwitchValue", $"MinSwitchValue({id})" + " = 0.0");
             return 0.0;
         }
 
@@ -696,6 +636,7 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             double switchValue = 0.0;
             Validate("GetSwitchValue", id);
+            string ipAddress = switchMap.ReadDeviceIP(id);
             NetIO netIO = new NetIO(ipAddress);
             Validate("GetSwitch", id);
             JAPI.Switch.GetStatusRequest statusRequest = new JAPI.Switch.GetStatusRequest();
@@ -719,16 +660,26 @@ namespace ASCOM.ShellyRelayController.Switch
         /// <param name="value">The value to be set, between <see cref="MinSwitchValue"/> and <see cref="MaxSwitchValue"/></param>
         internal static void SetSwitchValue(short id, double value)
         {
+            Validate("SetSwitchValue", id);
             Validate("SetSwitchValue", id, value);
             if (!CanWrite(id))
             {
-                LogMessage("SetSwitchValue", $"SetSwitchValue({id}) - Cannot write");
-                throw new ASCOM.MethodNotImplementedException($"SetSwitchValue({id}) - Cannot write");
+                var str = $"SetSwitchValue({id}) - Cannot Write";
+                LogMessage("SetSwitchValue", str);
+                throw new MethodNotImplementedException(str);
             }
+            LogMessage("SetSwitchValue", $"SetSwitchValue({id}) = {value}");
+            string ipAddress = switchMap.ReadDeviceIP(id);
             NetIO netIO = new NetIO(ipAddress);
             JAPI.Switch.SetSwitchRequest relayRequest = new JAPI.Switch.SetSwitchRequest();
+            string relayNumberString = switchMap.ReadRelayNumber(id);
+            if (relayNumberString == null)
+            {
+                LogMessage("SetSwitchValue", $"Failed -- unknown relay number {relayNumberString}");
+                return;
+            }
             relayRequest.id = 0;
-            relayRequest.@params.id = id;
+            relayRequest.@params.id = Convert.ToInt16(relayNumberString);
             if (value == 0.0)
                 relayRequest.@params.on = false;
             else
@@ -741,7 +692,7 @@ namespace ASCOM.ShellyRelayController.Switch
                 LogMessage("SetSwitchValue", $"SetSwitchValue({id}) = Error: {relayResponse.error.code}");
                 throw new ASCOM.DriverException(relayResponse.error.message);
             }
-            LogMessage("SetSwitchValue", $"SetSwitchValue({id}) = {value}");
+            LogMessage("SetSwitchValue", $"SetSwitchValue({id}) = {relayRequest.@params.on}");
             return;
         }
 
@@ -864,10 +815,10 @@ namespace ASCOM.ShellyRelayController.Switch
         /// <param name="id">The id.</param>
         private static void Validate(string message, short id)
         {
-            if (id < 0 || id >= numSwitch)
+            if (id < 0 || id > MaxSwitch)
             {
-                LogMessage(message, string.Format("Switch {0} not available, range is 0 to {1}", id, numSwitch - 1));
-                throw new InvalidValueException(message, id.ToString(), string.Format("0 to {0}", numSwitch - 1));
+                LogMessage(message, string.Format("Switch {0} not available, range is 0 to {1}", id, maxSwitchNumber - 1));
+                throw new InvalidValueException(message, id.ToString(), string.Format("0 to {0}", maxSwitchNumber - 1));
             }
         }
 
@@ -927,9 +878,11 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             using (Profile driverProfile = new Profile())
             {
+                tl.LogStart("ReadProfile", "Reading device configuration from ASCOM Profile store");
                 driverProfile.DeviceType = "Switch";
                 tl.Enabled = Convert.ToBoolean(driverProfile.GetValue(DriverProgId, traceStateProfileName, string.Empty, traceStateDefault));
-                ipAddress = driverProfile.GetValue(DriverProgId, ipAddressProfileName, string.Empty, DefaultIPAddress);
+                string encodedSwitchMap = driverProfile.GetValue(DriverProgId, switchMapProfileName, string.Empty, "");
+                switchMap = new SwitchMap(encodedSwitchMap);
             }
         }
 
@@ -940,9 +893,10 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             using (Profile driverProfile = new Profile())
             {
+                tl.LogStart("WriteProfile", "Writing device configuration to ASCOM Profile store");
                 driverProfile.DeviceType = "Switch";
                 driverProfile.WriteValue(DriverProgId, traceStateProfileName, tl.Enabled.ToString());
-                driverProfile.WriteValue(DriverProgId, ipAddressProfileName, ipAddress);
+                driverProfile.WriteValue(DriverProgId, switchMapProfileName, switchMap.ReadSwitchMap());
             }
         }
 

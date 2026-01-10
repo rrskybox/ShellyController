@@ -3,7 +3,6 @@ using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -12,7 +11,6 @@ namespace ASCOM.ShellyRelayController.Switch
     [ComVisible(false)] // Form not registered for COM!
     public partial class SetupDialogForm : Form
     {
-        const string NO_IPADDRESS_MESSAGE = "No IP Addresss found";
         TraceLogger tl; // Holder for a reference to the driver's trace logger
 
         public SetupDialogForm(TraceLogger tlDriver)
@@ -24,6 +22,12 @@ namespace ASCOM.ShellyRelayController.Switch
 
             // Initialise current values of user settings from the ASCOM Profile
             InitUI();
+            //Load the switch map data grid
+            foreach (var mapping in SwitchHardware.switchMap.GetAllMappings())
+            {
+                tl.LogMessage("Load Switch Map", mapping.ToString());
+                SwitchMapDataGrid.Rows.Add(mapping.SwitchNumber, mapping.DeviceIP, mapping.DeviceMAC, mapping.RelayNumber, mapping.RelayName);
+            }
         }
 
         private void CmdOK_Click(object sender, EventArgs e) // OK button event handler
@@ -32,19 +36,18 @@ namespace ASCOM.ShellyRelayController.Switch
 
             tl.Enabled = chkTrace.Checked;
 
-            // Update the IP Address variable if one has been selected
-            if (IPAddressTextBox.Text is null) // No IP Address selected
+            // Update the switch map data grid
+            if (SwitchHardware.switchMap is null) // No devices selected
             {
-                tl.LogMessage("Setup OK", $"New configuration values - IP Address: Not selected");
+                tl.LogMessage("Setup OK", $"Switch Map is empty");
             }
-            else if (IPAddressTextBox.Text == NO_IPADDRESS_MESSAGE)
+            else
             {
-                tl.LogMessage("Setup OK", $"New configuration values - NO IP Addresss detected on this PC.");
-            }
-            else // A valid ipAddess has been selected
-            {
-                SwitchHardware.ipAddress = (string)IPAddressTextBox.Text;
-                tl.LogMessage("Setup OK", $"New configuration values - IP Address: {IPAddressTextBox.Text}");
+                //Write the relay names out to the devices in case some have been modifified
+                for (int i = 0; i < SwitchMapDataGrid.Rows.Count; i++)
+                    SwitchHardware.SetSwitchName((short)i, SwitchMapDataGrid.Rows[i].Cells[4].Value.ToString());
+                SwitchHardware.WriteProfile();
+                tl.LogMessage("Setup OK", $"Switch Map has entries");
             }
         }
 
@@ -76,19 +79,14 @@ namespace ASCOM.ShellyRelayController.Switch
             // Set the trace checkbox
             chkTrace.Checked = tl.Enabled;
 
-            // set the list of IP Addresss to those that are currently available
-            IPAddressTextBox.Clear(); // Clear any existing entries
-            // select the current port if possible
-            IPAddressTextBox.Text = SwitchHardware.ipAddress;
-
-            // If no ports are found include a message to this effect
-            if (IPAddressTextBox.Text == null)
+            if (SwitchHardware.switchMap is null) // No devices selected
             {
-                IPAddressTextBox.Text = NO_IPADDRESS_MESSAGE;
+                tl.LogMessage("Setup OK", $"Switch Map is empty");
             }
-
-
-            tl.LogMessage("InitUI", $"Set UI controls to Trace: {chkTrace.Checked}, IP Address: {IPAddressTextBox.Text}");
+            else
+            {
+                tl.LogMessage("Setup OK", $"Loading Switch Map");
+            }
         }
 
         private void SetupDialogForm_Load(object sender, EventArgs e)
@@ -105,25 +103,103 @@ namespace ASCOM.ShellyRelayController.Switch
             }
         }
 
-        private void ShellyDevicesComboBox_Click(object sender, EventArgs e)
-        {
-
-            ShellyDevicesComboBox.Items.Clear();
-            foreach (NetworkInterface netInterface in
-                NetworkInterface.GetAllNetworkInterfaces())
-            {
-                IPInterfaceProperties ipProps = netInterface.GetIPProperties();
-                foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
-
-                    ShellyDevicesComboBox.Items.Add(addr.Address.ToString());
-            }
-
-        }
-
         private void ShellyDevicesComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            IPAddressTextBox.Text = ShellyDevicesComboBox.SelectedItem.ToString();
+
         }
 
+        private void AddDeviceButton_Click(object sender, EventArgs e)
+        {
+            //Generate Shelly GetConfig Request url and open socket to IP address as entered in IPTextBox
+            JAPI.Shelly.GetConfigRequest shellyGetConfigRequest = new JAPI.Shelly.GetConfigRequest();
+            JAPI.Shelly.GetConfigResponse.Response shellyGetConfigResponse = new JAPI.Shelly.GetConfigResponse.Response();
+            string ipAddress = IPTextBox.Text;
+            int switchID = 0;
+            int relayID = 0;
+            string deviceDscription = "";
+            try
+            {
+                IPAddress.Parse(ipAddress);
+            }
+            catch (Exception ex)
+            {
+                tl.LogMessage("Add Device", $"Add Device = Failed: {ex.Message}");
+                return;
+            }
+            NetIO netIO = new NetIO(ipAddress);
+            //Validate IP address as Shelly Device by checking the number of relays on the device
+            try
+            {
+                shellyGetConfigRequest.id = 0;
+                shellyGetConfigRequest.@params.id = 0;
+                string jsnShellyGetConfigRequest = JsonConvert.SerializeObject(shellyGetConfigRequest);
+                string jsnShellyGetConfigResponse = netIO.SendCommand(jsnShellyGetConfigRequest);
+                shellyGetConfigResponse = JsonConvert.DeserializeObject<JAPI.Shelly.GetConfigResponse.Response>(jsnShellyGetConfigResponse);
+                tl.LogMessage("Add Device", $"Add Device = Successful Device Get Configuration");
+            }
+            catch (Exception ex)
+            {
+                tl.LogMessage("Add Device", $"Add Device = Failed: {ex.Message}");
+                return;
+            }
+            //Determine the number of relays on the device
+            if (shellyGetConfigResponse.result.switch0 is null)
+            {
+                tl.LogMessage("Add Device", $"Device at IP Address {ipAddress} is not support switches");
+                return;
+            }
+            switchID = SwitchMapDataGrid.Rows.Count;
+            relayID = 0;
+
+            tl.LogMessage("Add Device", $"Switch Number = {switchID.ToString()} Relay Name: {shellyGetConfigResponse.result.switch0.name}");
+            SwitchHardware.switchMap.AddMapping(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch0.name);
+            SwitchMapDataGrid.Rows.Add(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch0.name);
+
+            if (shellyGetConfigResponse.result.switch1 is null)
+            {
+                tl.LogMessage("Add Device", $"Device at IP Address {ipAddress} supports one relay");
+                return;
+            }
+            switchID = SwitchMapDataGrid.Rows.Count;
+            relayID = 1;
+            tl.LogMessage("Add Device", $"Switch Number = {switchID.ToString()} Relay Name: {shellyGetConfigResponse.result.switch1.name}");
+            SwitchHardware.switchMap.AddMapping(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch1.name);
+            SwitchMapDataGrid.Rows.Add(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch1.name);
+
+            if (shellyGetConfigResponse.result.switch2 is null)
+            {
+                tl.LogMessage("Add Device", $"Device at IP Address {ipAddress} supports two relays");
+                return;
+            }
+            switchID = SwitchMapDataGrid.Rows.Count;
+            relayID = 2;
+            tl.LogMessage("Add Device", $"Switch Number = {switchID.ToString()} Relay Name: {shellyGetConfigResponse.result.switch2.name}");
+            SwitchHardware.switchMap.AddMapping(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch2.name);
+            SwitchMapDataGrid.Rows.Add(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch2.name);
+
+            if (shellyGetConfigResponse.result.switch3 is null)
+            {
+                tl.LogMessage("Add Device", $"Device at IP Address {ipAddress} supports three relays");
+                return;
+            }
+            switchID = SwitchMapDataGrid.Rows.Count;
+            relayID = 3;
+            tl.LogMessage("Add Device", $"Switch Number = {switchID.ToString()} Relay Name: {shellyGetConfigResponse.result.switch3.name}");
+            SwitchHardware.switchMap.AddMapping(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch3.name);
+            SwitchMapDataGrid.Rows.Add(switchID, ipAddress, shellyGetConfigResponse.result.sys.device.mac, relayID, shellyGetConfigResponse.result.switch3.name);
+
+            tl.LogMessage("Add Device", $"Device at IP Address {ipAddress} supports four relays");
+            return;
+        }
+
+        private void ClearButton_Click(object sender, EventArgs e)
+        {
+            SwitchMapDataGrid.Rows.Clear();
+            SwitchHardware.switchMap.ClearMappings();
+        }
+
+        private void SwitchMapDataGrid_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+        }
     }
 }
