@@ -29,21 +29,22 @@ namespace ASCOM.ShellyRelayController.Switch
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SetupDialogForm));
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.cmdOK = new System.Windows.Forms.Button();
             this.cmdCancel = new System.Windows.Forms.Button();
             this.picASCOM = new System.Windows.Forms.PictureBox();
             this.chkTrace = new System.Windows.Forms.CheckBox();
             this.SwitchMapDataGrid = new System.Windows.Forms.DataGridView();
-            this.SwitchColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.IPAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.MACAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.RelayColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.RelayName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.AddDeviceButton = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.IPTextBox = new System.Windows.Forms.TextBox();
             this.ClearButton = new System.Windows.Forms.Button();
+            this.SwitchColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.IPAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.MACAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.RelayColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.RelayName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SwitchMapDataGrid)).BeginInit();
             this.groupBox1.SuspendLayout();
@@ -117,47 +118,6 @@ namespace ASCOM.ShellyRelayController.Switch
             this.SwitchMapDataGrid.RowHeadersWidth = 82;
             this.SwitchMapDataGrid.Size = new System.Drawing.Size(382, 298);
             this.SwitchMapDataGrid.TabIndex = 10;
-            this.SwitchMapDataGrid.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.SwitchMapDataGrid_CellContentClick);
-            // 
-            // SwitchColumn
-            // 
-            this.SwitchColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
-            this.SwitchColumn.HeaderText = "Switch";
-            this.SwitchColumn.MinimumWidth = 10;
-            this.SwitchColumn.Name = "SwitchColumn";
-            this.SwitchColumn.Width = 64;
-            // 
-            // IPAddressColumn
-            // 
-            this.IPAddressColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
-            this.IPAddressColumn.HeaderText = "IP Address";
-            this.IPAddressColumn.MinimumWidth = 10;
-            this.IPAddressColumn.Name = "IPAddressColumn";
-            this.IPAddressColumn.Width = 83;
-            // 
-            // MACAddressColumn
-            // 
-            this.MACAddressColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
-            this.MACAddressColumn.HeaderText = "MAC Address";
-            this.MACAddressColumn.MinimumWidth = 10;
-            this.MACAddressColumn.Name = "MACAddressColumn";
-            this.MACAddressColumn.Width = 96;
-            // 
-            // RelayColumn
-            // 
-            this.RelayColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
-            this.RelayColumn.HeaderText = "Relay";
-            this.RelayColumn.MinimumWidth = 10;
-            this.RelayColumn.Name = "RelayColumn";
-            this.RelayColumn.Width = 59;
-            // 
-            // RelayName
-            // 
-            this.RelayName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
-            this.RelayName.HeaderText = "Relay Name";
-            this.RelayName.MinimumWidth = 10;
-            this.RelayName.Name = "RelayName";
-            this.RelayName.Width = 90;
             // 
             // AddDeviceButton
             // 
@@ -212,6 +172,48 @@ namespace ASCOM.ShellyRelayController.Switch
             this.ClearButton.UseVisualStyleBackColor = true;
             this.ClearButton.Click += new System.EventHandler(this.ClearButton_Click);
             // 
+            // SwitchColumn
+            // 
+            this.SwitchColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            this.SwitchColumn.DefaultCellStyle = dataGridViewCellStyle1;
+            this.SwitchColumn.HeaderText = "Switch";
+            this.SwitchColumn.MinimumWidth = 10;
+            this.SwitchColumn.Name = "SwitchColumn";
+            this.SwitchColumn.Width = 64;
+            // 
+            // IPAddressColumn
+            // 
+            this.IPAddressColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            this.IPAddressColumn.HeaderText = "IP Address";
+            this.IPAddressColumn.MinimumWidth = 10;
+            this.IPAddressColumn.Name = "IPAddressColumn";
+            this.IPAddressColumn.Width = 83;
+            // 
+            // MACAddressColumn
+            // 
+            this.MACAddressColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            this.MACAddressColumn.HeaderText = "MAC Address";
+            this.MACAddressColumn.MinimumWidth = 10;
+            this.MACAddressColumn.Name = "MACAddressColumn";
+            this.MACAddressColumn.Width = 96;
+            // 
+            // RelayColumn
+            // 
+            this.RelayColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            this.RelayColumn.HeaderText = "Relay";
+            this.RelayColumn.MinimumWidth = 10;
+            this.RelayColumn.Name = "RelayColumn";
+            this.RelayColumn.Width = 59;
+            // 
+            // RelayName
+            // 
+            this.RelayName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.ColumnHeader;
+            this.RelayName.HeaderText = "Relay Name";
+            this.RelayName.MinimumWidth = 10;
+            this.RelayName.Name = "RelayName";
+            this.RelayName.Width = 90;
+            // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -250,14 +252,14 @@ namespace ASCOM.ShellyRelayController.Switch
         private System.Windows.Forms.CheckBox chkTrace;
         private System.Windows.Forms.DataGridView SwitchMapDataGrid;
         private System.Windows.Forms.Button AddDeviceButton;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button ClearButton;
+        private System.Windows.Forms.TextBox IPTextBox;
         private System.Windows.Forms.DataGridViewTextBoxColumn SwitchColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn IPAddressColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn MACAddressColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn RelayColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn RelayName;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.Button ClearButton;
-        private System.Windows.Forms.TextBox IPTextBox;
     }
 }

@@ -5,13 +5,13 @@
 [Setup]
 AppID={{8fae2012-c38b-410c-803c-69511062094d}
 AppName=ASCOM Shelly Controller Switch Driver
-AppVerName=ASCOM Shelly Controller Switch Driver 1.0.0
-AppVersion=1.0.5
+AppVerName=ASCOM Shelly Controller Switch Driver 1.0.10
+AppVersion=1.0.10
 AppPublisher=McAlister <rrskybox@yahoo.com>
 AppPublisherURL=mailto:rrskybox@yahoo.com
 AppSupportURL=https://ascomtalk.groups.io/g/Help
 AppUpdatesURL=https://ascom-standards.org/
-VersionInfoVersion=1.0.5
+VersionInfoVersion=1.0.10
 MinVersion=6.1.7601
 DefaultDirName="{cf}\ASCOM\Switch"
 DisableDirPage=yes

@@ -16,18 +16,22 @@ namespace ASCOM.ShellyRelayController.Switch
         public SetupDialogForm(TraceLogger tlDriver)
         {
             InitializeComponent();
+            Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            // TODO customise this driver description if required
+            this.Text = $"Shelly Relay Controller: Version: {version.Major}.{version.Minor}.{version.Build}";
 
             // Save the provided trace logger for use within the setup dialogue
             tl = tlDriver;
 
             // Initialise current values of user settings from the ASCOM Profile
             InitUI();
+
             //Load the switch map data grid
             foreach (var mapping in SwitchHardware.switchMap.GetAllMappings())
             {
                 tl.LogMessage("Load Switch Map", mapping.ToString());
                 SwitchMapDataGrid.Rows.Add(mapping.SwitchNumber, mapping.DeviceIP, mapping.DeviceMAC, mapping.RelayNumber, mapping.RelayName);
-            }
+            } 
         }
 
         private void CmdOK_Click(object sender, EventArgs e) // OK button event handler
@@ -37,7 +41,7 @@ namespace ASCOM.ShellyRelayController.Switch
             tl.Enabled = chkTrace.Checked;
 
             // Update the switch map data grid
-            if (SwitchHardware.switchMap is null) // No devices selected
+            if (SwitchHardware.switchMap.GetAllMappings().Count == 0) // No devices selected
             {
                 tl.LogMessage("Setup OK", $"Switch Map is empty");
             }
@@ -45,7 +49,11 @@ namespace ASCOM.ShellyRelayController.Switch
             {
                 //Write the relay names out to the devices in case some have been modifified
                 for (int i = 0; i < SwitchMapDataGrid.Rows.Count; i++)
-                    SwitchHardware.SetSwitchName((short)i, SwitchMapDataGrid.Rows[i].Cells[4].Value.ToString());
+                    if (SwitchMapDataGrid.Rows[i].Cells[4].Value != null)
+                        SwitchHardware.SetSwitchName((short)i, SwitchMapDataGrid.Rows[i].Cells[4].Value.ToString());
+                else
+                        SwitchHardware.SetSwitchName((short)i, "Relay " + i.ToString());
+
                 SwitchHardware.WriteProfile();
                 tl.LogMessage("Setup OK", $"Switch Map has entries");
             }
@@ -103,11 +111,6 @@ namespace ASCOM.ShellyRelayController.Switch
             }
         }
 
-        private void ShellyDevicesComboBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
         private void AddDeviceButton_Click(object sender, EventArgs e)
         {
             //Generate Shelly GetConfig Request url and open socket to IP address as entered in IPTextBox
@@ -116,7 +119,7 @@ namespace ASCOM.ShellyRelayController.Switch
             string ipAddress = IPTextBox.Text;
             int switchID = 0;
             int relayID = 0;
-            string deviceDscription = "";
+            string deviceDscription = "none";
             try
             {
                 IPAddress.Parse(ipAddress);
@@ -198,8 +201,5 @@ namespace ASCOM.ShellyRelayController.Switch
             SwitchHardware.switchMap.ClearMappings();
         }
 
-        private void SwitchMapDataGrid_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-        }
     }
 }

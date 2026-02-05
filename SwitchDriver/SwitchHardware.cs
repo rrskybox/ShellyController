@@ -53,7 +53,7 @@ namespace ASCOM.ShellyRelayController.Switch
         private static string DriverDescription = ""; // The value is set by the driver's class initialiser.
 
         //public static string ipAddress { get; set; } = DefaultIPAddress; // IP Address of the Shelly Power Relay device
-        public static SwitchMap switchMap { get; set; } = null; // Switch mapping information
+        public static SwitchMap switchMap; // Switch mapping information
 
         private static bool connectedState; // Local server's connected state
         private static bool runOnce = false; // Flag to enable "one-off" activities only to run once.
@@ -455,9 +455,9 @@ namespace ASCOM.ShellyRelayController.Switch
         {
             get
             {
-                LogMessage("MaxSwitch Get", maxSwitchNumber.ToString());
-                maxSwitchNumber = (short)(switchMap.MaxSwitchNumber + 1);
-                return maxSwitchNumber;
+                int maxSwitches = switchMap.GetAllMappings().Count;
+                LogMessage("MaxSwitch Get", maxSwitches.ToString());
+                return (short)maxSwitches;
             }
         }
 
@@ -896,7 +896,7 @@ namespace ASCOM.ShellyRelayController.Switch
                 tl.LogStart("WriteProfile", "Writing device configuration to ASCOM Profile store");
                 driverProfile.DeviceType = "Switch";
                 driverProfile.WriteValue(DriverProgId, traceStateProfileName, tl.Enabled.ToString());
-                driverProfile.WriteValue(DriverProgId, switchMapProfileName, switchMap.ReadSwitchMap());
+                driverProfile.WriteValue(DriverProgId, switchMapProfileName, switchMap.EncodeSwitchMap());
             }
         }
 

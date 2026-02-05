@@ -53,31 +53,52 @@ namespace ASCOM.ShellyRelayController.Switch
             return switchMappings.Any(m => m.SwitchNumber == switchNumber);
         }
 
+        // Returns the highest switch number in the mapping, or -1 if no mappings exist
         public int MaxSwitchNumber
         {
             get
             {
                 if (switchMappings.Count == 0)
                 {
-                    return 0;
+                    return -1;
                 }
                 return switchMappings.Max(m => m.SwitchNumber);
             }
         }
 
+        //returns all mappings in a list
         public List<SwitchMapping> GetAllMappings()
         {
             return switchMappings;
         }
 
-        public string ReadSwitchMap()
+        public void DecodeSwitchMap(string encodedString)
         {
-            string endcode = "";
+            switchMappings.Clear();
+            List<string> mappings = encodedString.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            foreach (string mapping in mappings)
+            {
+                string[] parts = mapping.Split(new char[] { ',' });
+                if (parts.Length == 5)
+                {
+                    int switchNumber = int.Parse(parts[0]);
+                    string shellyIP = parts[1];
+                    string shellyMac = parts[2];
+                    int shellyRelayNumber = int.Parse(parts[3]);
+                    string shellyRelayName = parts[4];
+                    AddMapping(switchNumber, shellyIP, shellyMac, shellyRelayNumber, shellyRelayName);
+                }
+            }
+        }
+
+        public string EncodeSwitchMap()
+        {
+            string encodeMap = "";
             foreach (var mapping in switchMappings)
             {
-                endcode += $"{mapping.SwitchNumber},{mapping.DeviceIP},{mapping.DeviceMAC},{mapping.RelayNumber},{mapping.RelayName};";
+                encodeMap += $"{mapping.SwitchNumber},{mapping.DeviceIP},{mapping.DeviceMAC},{mapping.RelayNumber},{mapping.RelayName};";
             }
-            return endcode;
+            return encodeMap;
         }
 
         public string ReadDeviceIP(int switchNumber)
