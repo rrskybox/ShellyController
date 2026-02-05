@@ -5,13 +5,13 @@
 [Setup]
 AppID={{8fae2012-c38b-410c-803c-69511062094d}
 AppName=ASCOM Shelly Controller Switch Driver
-AppVerName=ASCOM Shelly Controller Switch Driver 1.0.10
-AppVersion=1.0.10
+AppVerName=ASCOM Shelly Controller Switch Driver 1.0.11
+AppVersion=1.0.11
 AppPublisher=McAlister <rrskybox@yahoo.com>
 AppPublisherURL=mailto:rrskybox@yahoo.com
 AppSupportURL=https://ascomtalk.groups.io/g/Help
 AppUpdatesURL=https://ascom-standards.org/
-VersionInfoVersion=1.0.10
+VersionInfoVersion=1.0.11
 MinVersion=6.1.7601
 DefaultDirName="{cf}\ASCOM\Switch"
 DisableDirPage=yes
@@ -37,7 +37,7 @@ Name: "{cf}\ASCOM\Uninstall\Switch\Shelly Controller"
 Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\bin\Debug\ASCOM.ShellyRelayController.exe"; DestDir: "{app}"
 ; TODO: Add driver assemblies into the ServedClasses folder
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
-Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\Shelly Controller Guide.htm"; DestDir: "{app}"; Flags: isreadme
+Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\Shelly Controller Guide.html"; DestDir: "{app}"; Flags: isreadme
 ; TODO: Add other files needed by your driver here (add subfolders above)
 Source: "C:\Users\rick-\OneDrive\ASCOMdrivers\ShellyController\bin\Debug\Newtonsoft.Json.dll"; DestDir: "{app}"
 

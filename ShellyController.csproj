@@ -120,9 +120,6 @@
     <AdditionalFiles Include="SwitchDriver\Shelly Controller Guide.htm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </AdditionalFiles>
-    <AdditionalFiles Include="Shelly Controller Guide.htm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </AdditionalFiles>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
